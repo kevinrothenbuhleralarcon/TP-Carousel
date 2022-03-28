@@ -18,8 +18,10 @@ class Carousel {
         //get all the children from the element and store them in an array because we want the current state (we don't want it modified when we add the carousel)
         const children = [...element.children] 
 
-        // Create the main element and the container for the carousel (here it's for the example it would be easier to do it directly in html)
+        // Change of DOM
+        // Create the main element and the container for the carousel
         this.root = this.createDivWithClass("carousel")
+        this.root.setAttribute("tabindex", "0") // Allow to select the element with tab, the 0 means that it will follow the html order
         this.container = this.createDivWithClass("carousel__container")
         this.root.appendChild(this.container)
         this.element.appendChild(this.root)
@@ -33,6 +35,16 @@ class Carousel {
         this.setStyle()
         this.createNavigation()
         this.onWindowResize()
+
+        // Events
+        this.root.addEventListener("keyup", (e) => {
+            // The second condition is for IE compatibility
+            if(e.key === "ArrowRight" || e.key === "Right") {
+                this.next()
+            } else if (e.key === "ArrowLeft" || e.key === "Left") {
+                this.previous()
+            }
+        })
         window.addEventListener("resize", this.onWindowResize.bind(this))
     }
 
@@ -91,9 +103,19 @@ class Carousel {
      */
     goToSlide(index) {
         if (index < 0 && this.currentSlide <= 0) {
-            index = this.items.length - this.slidesToShow
+            if(this.loop)
+            {
+                index = this.items.length - this.slidesToShow
+            } else {
+                return
+            }
+            
         } else if (index >= this.items.length || (this.currentSlide + this.slidesToShow >= this.items.length && index > this.currentSlide)) {
-            index = 0
+            if (this.loop) {
+                index = 0
+            } else {
+                return 
+            }
         }
         const translateX = (-100 / this.items.length) * index
         this.container.style.transform = "translate3d(" + translateX + "%, 0, 0)"
