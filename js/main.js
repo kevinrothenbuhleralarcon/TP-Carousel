@@ -15,9 +15,13 @@ class Carousel {
             pagination: this.element.getAttribute("data-pagination") === "true" || false,
             infinite: infinite
         }
+        if (this.options.loop && this.options.infinite) {
+            throw new Error("Un carousel ne peut pas être à la fois en boucle et en loop")
+        }
         this.currentSlide = 0
         this.isMobile = false
         this.moveCallbacks = []
+        this.offset = 0
         //get all the children from the element and store them in an array because we want the current state (we don't want it modified when we add the carousel)
         const children = [...element.children] 
 
@@ -34,13 +38,13 @@ class Carousel {
         })
 
         if (this.options.infinite) {
-            const offset = this.options.slidesVisible * 2 - 1
+            this.offset = this.options.slidesVisible + this.options.slidesVisible - 1
             this.items = [
-                ...this.items.slice(this.items.length - offset).map(item => item.cloneNode(true)),
+                ...this.items.slice(this.items.length - this.offset).map(item => item.cloneNode(true)),
                 ...this.items,
-                ...this.items.slice(0, offset).map(item => item.cloneNode(true))
+                ...this.items.slice(0, this.offset).map(item => item.cloneNode(true))
             ]
-            this.goToSlide(offset, false)
+            this.goToSlide(this.offset, false)
         }
 
         this.items.forEach(item => {
@@ -57,6 +61,12 @@ class Carousel {
         // Events
         this.onWindowResize()
         window.addEventListener("resize", this.onWindowResize.bind(this))
+    
+        if (this.options.infinite) {
+            this.container.addEventListener("transitionend", this.resetInfinite.bind(this))
+        }
+
+        this.fireOnMoveCallback(this.currentSlide) // Fire the callbacks to show or hide the navigation arrow based on the new style     
     }
 
     /**
@@ -114,7 +124,6 @@ class Carousel {
                 }
             })
         } 
-        this.fireOnMoveCallback(this.currentSlide) // Fire the callbacks to show or hide the navigation arrow based on the new style     
     }
 
     /**
@@ -124,14 +133,14 @@ class Carousel {
         const pagination = this.createDivWithClass("carousel__pagination")
         const buttons = []
         this.root.appendChild(pagination)
-        for (let i = 0; i < this.items.length; i = i + this.options.slidesToScroll) {
+        for (let i = 0; i < (this.items.length - 2 * this.offset); i = i + this.options.slidesToScroll) {
             const btn = this.createDivWithClass("carousel__pagination__btn")
-            btn.addEventListener("click", () => this.goToSlide(i))
+            btn.addEventListener("click", () => this.goToSlide(i + this.offset))
             pagination.appendChild(btn)
             buttons.push(btn)
         }
         this.addOnMoveCallback(index => {
-            const activeButton = buttons[Math.floor(index / this.options.slidesToScroll)]
+            const activeButton = buttons[Math.floor((index - this.offset) / this.options.slidesToScroll)]
             if (activeButton) {
                 buttons.forEach(btn => {
                     btn.classList.remove("carousel__pagination__btn--active")
@@ -183,6 +192,17 @@ class Carousel {
         }
         this.currentSlide = index
         this.fireOnMoveCallback(index)
+    }
+
+    /**
+     * Move the container to simulaate an infinite slide
+     */
+    resetInfinite() {
+        if (this.currentSlide <= this.options.slidesToScroll) {
+            this.goToSlide(this.currentSlide + (this.items.length - 2 * this.offset), false)
+        } else if (this.currentSlide >= this.items.length - this.offset) {
+            this.goToSlide(this.currentSlide - (this.items.length - 2 * this.offset), false)
+        }
     }
 
     addOnMoveCallback(cb) {
