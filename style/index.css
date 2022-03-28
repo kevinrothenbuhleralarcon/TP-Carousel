@@ -108,3 +108,35 @@ CAROUSEL
 .hidden {
     opacity: 0;
 }
+
+.carousel__pagination {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    display: none;
+}
+
+.carousel__pagination__btn {
+    display: inline-block;
+    border-radius: 50%;
+    background-color: #FFF;
+    box-shadow: 0 2px 5px #3232321a;
+    width: 10px;
+    height: 10px;
+    margin: 0 3px;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.carousel__pagination__btn--active,
+.carousel__pagination__btn:hover{
+    transform: scale(1.4);
+}
+
+@media only screen and (min-width: 800px) {
+    .carousel__pagination {
+        display: block;
+    }
+}

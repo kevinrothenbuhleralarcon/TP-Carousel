@@ -10,7 +10,8 @@ class Carousel {
         this.options = {
             slidesToScroll: Number(this.element.getAttribute("data-slideToScroll")) || 1,
             slidesVisible: Number(this.element.getAttribute("data-nbSlide")) || 1,
-            loop: this.element.getAttribute("data-loop") === "true" || false
+            loop: this.element.getAttribute("data-loop") === "true" || false,
+            pagination: this.element.getAttribute("data-pagination") === "true" || false
         }
         this.currentSlide = 0
         this.isMobile = false
@@ -21,7 +22,6 @@ class Carousel {
         // Change of DOM
         // Create the main element and the container for the carousel
         this.root = this.createDivWithClass("carousel")
-        this.root.setAttribute("tabindex", "0") // Allow to select the element with tab, the 0 means that it will follow the html order
         this.container = this.createDivWithClass("carousel__container")
         this.root.appendChild(this.container)
         this.element.appendChild(this.root)
@@ -34,17 +34,13 @@ class Carousel {
 
         this.setStyle()
         this.createNavigation()
-        this.onWindowResize()
+
+        if (this.options.pagination) {
+            this.createPagination()
+        }
 
         // Events
-        this.root.addEventListener("keyup", (e) => {
-            // The second condition is for IE compatibility
-            if(e.key === "ArrowRight" || e.key === "Right") {
-                this.next()
-            } else if (e.key === "ArrowLeft" || e.key === "Left") {
-                this.previous()
-            }
-        })
+        this.onWindowResize()
         window.addEventListener("resize", this.onWindowResize.bind(this))
     }
 
@@ -59,6 +55,10 @@ class Carousel {
         })
     }
 
+
+    /**
+     * Create the navigation with arrow button and keyboard keys
+     */
     createNavigation() {
         const nextButton = this.createDivWithClass("carousel__next")
         const previousButton = this.createDivWithClass("carousel__previous")
@@ -66,6 +66,19 @@ class Carousel {
         this.root.appendChild(previousButton)
         nextButton.addEventListener("click", this.next.bind(this)) // .bind(this) allow to reference the class with this inside the function instead of the button
         previousButton.addEventListener("click", this.previous.bind(this))
+    
+        // Create navigation with arrow key
+        this.root.setAttribute("tabindex", "0") // Allow to select the element with tab, the 0 means that it will follow the html order
+        this.root.addEventListener("keyup", (e) => {
+            // The second condition is for IE compatibility
+            if(e.key === "ArrowRight" || e.key === "Right") {
+                this.next()
+            } else if (e.key === "ArrowLeft" || e.key === "Left") {
+                this.previous()
+            }
+        })
+        
+        // Set the callback to hide the arrows if the loop option is disable
         if (!this.options.loop)
         {
             this.addOnMoveCallback(index => {
@@ -89,6 +102,32 @@ class Carousel {
         this.fireOnMoveCallback(this.currentSlide) // Fire the callbacks to show or hide the navigation arrow based on the new style     
     }
 
+    /**
+     * Create pagination in DOM
+     */
+    createPagination() {
+        const pagination = this.createDivWithClass("carousel__pagination")
+        const buttons = []
+        this.root.appendChild(pagination)
+        for (let i = 0; i < this.items.length; i = i + this.options.slidesToScroll) {
+            const btn = this.createDivWithClass("carousel__pagination__btn")
+            btn.addEventListener("click", () => this.goToSlide(i))
+            pagination.appendChild(btn)
+            buttons.push(btn)
+        }
+        this.addOnMoveCallback(index => {
+            const activeButton = buttons[Math.floor(index / this.options.slidesToScroll)]
+            if (activeButton) {
+                buttons.forEach(btn => {
+                    btn.classList.remove("carousel__pagination__btn--active")
+                })
+                activeButton.classList.add("carousel__pagination__btn--active")
+            }
+        })
+        this.fireOnMoveCallback(0)
+    }
+
+
     next () {
         this.goToSlide(this.currentSlide + this.slidesToScroll)
     }
@@ -103,7 +142,7 @@ class Carousel {
      */
     goToSlide(index) {
         if (index < 0 && this.currentSlide <= 0) {
-            if(this.loop)
+            if(this.options.loop)
             {
                 index = this.items.length - this.slidesToShow
             } else {
@@ -111,7 +150,7 @@ class Carousel {
             }
             
         } else if (index >= this.items.length || (this.currentSlide + this.slidesToShow >= this.items.length && index > this.currentSlide)) {
-            if (this.loop) {
+            if (this.options.loop) {
                 index = 0
             } else {
                 return 
