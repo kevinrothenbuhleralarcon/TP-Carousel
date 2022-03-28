@@ -1,8 +1,9 @@
 class Carousel {
     /**
      * @param {HTMLElement} element 
+     * @param {Boolean} [infinite=false]
     */
-    constructor(element) {
+    constructor(element, infinite = false) {
         this.mobileMinWidth = 800
         this.element = element
 
@@ -11,7 +12,8 @@ class Carousel {
             slidesToScroll: Number(this.element.getAttribute("data-slideToScroll")) || 1,
             slidesVisible: Number(this.element.getAttribute("data-nbSlide")) || 1,
             loop: this.element.getAttribute("data-loop") === "true" || false,
-            pagination: this.element.getAttribute("data-pagination") === "true" || false
+            pagination: this.element.getAttribute("data-pagination") === "true" || false,
+            infinite: infinite
         }
         this.currentSlide = 0
         this.isMobile = false
@@ -28,8 +30,21 @@ class Carousel {
         this.items = children.map(child => {
             const item = this.createDivWithClass("carousel__item")
             item.appendChild(child)
-            this.container.appendChild(item)
             return item
+        })
+
+        if (this.options.infinite) {
+            const offset = this.options.slidesVisible * 2 - 1
+            this.items = [
+                ...this.items.slice(this.items.length - offset).map(item => item.cloneNode(true)),
+                ...this.items,
+                ...this.items.slice(0, offset).map(item => item.cloneNode(true))
+            ]
+            this.goToSlide(offset, false)
+        }
+
+        this.items.forEach(item => {
+            this.container.appendChild(item)
         })
 
         this.setStyle()
@@ -139,8 +154,9 @@ class Carousel {
     /**
      * Move the carousel to the target index
      * @param {number} index 
+     * @param {boolean} [animation=true]
      */
-    goToSlide(index) {
+    goToSlide(index, animation = true) {
         if (index < 0 && this.currentSlide <= 0) {
             if(this.options.loop)
             {
@@ -157,7 +173,14 @@ class Carousel {
             }
         }
         const translateX = (-100 / this.items.length) * index
+        if (!animation) {
+            this.container.style.transition = "none"
+        }
         this.container.style.transform = "translate3d(" + translateX + "%, 0, 0)"
+        this.container.offsetHeight // Force repaint
+        if (!animation) {
+            this.container.style.transition = ""
+        }
         this.currentSlide = index
         this.fireOnMoveCallback(index)
     }
@@ -208,6 +231,6 @@ class Carousel {
 
 new Carousel(document.querySelector("#carousel1"))
 
-new Carousel(document.querySelector("#carousel2"))
+new Carousel(document.querySelector("#carousel2"), true)
 
 new Carousel(document.querySelector("#carousel3"))
