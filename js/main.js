@@ -1,12 +1,8 @@
 class Carousel {
     /**
      * @param {HTMLElement} element 
-     * @param {Object} options 
-     * @param {Number} options.slidesToScroll - Number of element to scroll
-     * @param {Number} options.slidesVisible - Number of element visible in a slide
-     * @param {boolean} options.loop - If set to false hide the arrows when there's no more item to display
-     */
-    constructor(element, options = {}) {
+    */
+    constructor(element) {
         this.element = element
 
         // Allow to affect default values to slidesTO Scroll and SlidesVisible of not all of them are present
@@ -68,7 +64,7 @@ class Carousel {
             })
     
             this.addOnMoveCallback(index => {
-                if (index >= this.items.length -1) {
+                if (this.currentSlide + this.options.slidesVisible >= this.items.length) {
                     nextButton.classList.add("hidden")
                 }
                 else {
@@ -93,7 +89,7 @@ class Carousel {
     goToSlide(index) {
         if (index < 0 && this.currentSlide <= 0) {
             index = this.items.length - this.options.slidesVisible
-        } else if (index >= this.items.length) {
+        } else if (index >= this.items.length || (this.currentSlide + this.options.slidesVisible >= this.items.length && index > this.currentSlide)) {
             index = 0
         }
         const translateX = (-100 / this.items.length) * index
